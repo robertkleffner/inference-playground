@@ -9,9 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Units.Test", "Inf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Common", "Inference.Common\Inference.Common.csproj", "{B98073EC-9A5E-4B12-85AF-41D95872C0E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inference.Basic", "Inference.Basic\Inference.Basic.csproj", "{FFB38213-7818-4EC5-933F-DBAFF9DD46EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Basic", "Inference.Basic\Inference.Basic.csproj", "{FFB38213-7818-4EC5-933F-DBAFF9DD46EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inference.Basic.Test", "Inference.Basic.Test\Inference.Basic.Test.csproj", "{44EE42F4-BF88-4612-BACB-F517478D0E44}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Basic.Test", "Inference.Basic.Test\Inference.Basic.Test.csproj", "{44EE42F4-BF88-4612-BACB-F517478D0E44}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inference.Typeclasses", "Inference.Typeclasses\Inference.Typeclasses.csproj", "{B1BBD20C-B62B-4AA3-926F-071F6FD13390}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{44EE42F4-BF88-4612-BACB-F517478D0E44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44EE42F4-BF88-4612-BACB-F517478D0E44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44EE42F4-BF88-4612-BACB-F517478D0E44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1BBD20C-B62B-4AA3-926F-071F6FD13390}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1BBD20C-B62B-4AA3-926F-071F6FD13390}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1BBD20C-B62B-4AA3-926F-071F6FD13390}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1BBD20C-B62B-4AA3-926F-071F6FD13390}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
