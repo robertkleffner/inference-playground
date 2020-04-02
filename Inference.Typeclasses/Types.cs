@@ -340,6 +340,12 @@ namespace Inference.Typeclasses
             this.Head = head;
         }
 
+        public QualifiedType(IType head, params Predicate[] context)
+        {
+            this.Context = context.ToImmutableList();
+            this.Head = head;
+        }
+
         public QualifiedType Substitute(string replace, IType replaceWith) =>
             new QualifiedType(
                 this.Context.Select(p => p.Substitute(replace, replaceWith) as Predicate).ToImmutableList(),

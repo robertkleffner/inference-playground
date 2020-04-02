@@ -76,7 +76,7 @@ namespace Inference.Typeclasses
             var inference = new TypeInference(initial).Infer(term, out var result);
             Console.WriteLine($"Final: {inference}");
             var normalized = inference._state.Context.Normalize().Apply(result);
-            return normalized;
+            return new QualifiedType(normalized.Context.Reduce(inference._state.Context), normalized.Head);
         }
 
         private TypeInference Fresh(out string name)

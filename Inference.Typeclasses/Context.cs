@@ -89,7 +89,7 @@ namespace Inference.Typeclasses
         public static bool Entails(this IImmutableList<IContextEntry> context, IImmutableList<Predicate> conditions, Predicate test)
         {
             var subgoals = context.GetInstanceSubgoals(test);
-            return subgoals.All(sub => context.Entails(conditions, sub));
+            return subgoals != null ? subgoals.All(sub => context.Entails(conditions, sub)) : false;
         }
     }
 
@@ -149,6 +149,12 @@ namespace Inference.Typeclasses
         {
             this.Name = name;
             this.Instances = instances;
+        }
+
+        public TypeclassDeclaration(string name, params TypeScheme[] instances)
+        {
+            this.Name = name;
+            this.Instances = instances.ToImmutableList();
         }
     }
 }

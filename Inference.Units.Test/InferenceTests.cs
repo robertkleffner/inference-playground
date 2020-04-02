@@ -49,7 +49,7 @@ namespace Inference.Units.Test
         [TestMethod]
         public void InferFloatTests()
         {
-            InferenceState FloatTestInitialContext = new InferenceState(new FreshVariableStream(),
+            var FloatTestInitialContext = new InferenceState(new FreshVariableStream(),
                 new TermVariableBinding("zero", new TypeScheme(new FloatType(new UnitPower(new TypeVariable("x"), 1)), ("x", Kind.Unit))),
                 new TermVariableBinding("one", new TypeScheme(new FloatType(new UnitIdentity()))),
                 new TermVariableBinding("mass", new TypeScheme(new FloatType(new UnitPower(new PrimitiveUnit("kg"), 1)))),
