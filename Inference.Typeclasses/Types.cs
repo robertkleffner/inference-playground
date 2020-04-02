@@ -31,10 +31,19 @@ namespace Inference.Typeclasses
 
     public static class PrimType
     {
-        public static TypeConstructor FunCons => new TypeConstructor("->", new ArrowKind(new DataKind(), new DataKind()));
+        public static TypeConstructor FunCons => new TypeConstructor("->", new ArrowKind(new DataKind(), new ArrowKind(new DataKind(), new DataKind())));
 
-        public static IType Fun(IType input, IType output) =>
-            new TypeApplication(new TypeApplication(FunCons, input), output);
+        public static IType Fun(IType input, IType output, params IType[] moreOutput)
+        {
+            if (moreOutput.Any())
+            {
+                return new TypeApplication(new TypeApplication(FunCons, input), Fun(output, moreOutput.First(), moreOutput.Skip(1).ToArray()));
+            }
+            else
+            {
+                return new TypeApplication(new TypeApplication(FunCons, input), output);
+            }
+        }
     }
 
     public class TypeVariable : IType
@@ -148,7 +157,7 @@ namespace Inference.Typeclasses
                     }
                     throw new Exception($"Kind error: tried to apply {funKind} to {argKind} in ({this.Func} {this.Arg})");
                 }
-                throw new Exception($"Kind error: type expression is an application but the applied part does not have an arrow kind.");
+                throw new Exception($"Kind error: type expression ({this.Func} {this.Arg}) is an application but the applied part does not have an arrow kind.");
             }
         }
 
@@ -341,6 +350,19 @@ namespace Inference.Typeclasses
             .Select(p => p.Arg.FreeVariables())
             .Aggregate((s1, s2) => s1.Union(s2))
             .Union(this.Head.FreeVariables());
+
+        public override bool Equals(object obj)
+        {
+            return obj is QualifiedType other
+                ? this.Context.Count == other.Context.Count && this.Head.Equals(other.Head) && this.Context.Select((pred, ind) => pred.Equals(other.Context[ind])).All(x => x)
+                : false;
+        }
+
+        public override int GetHashCode() =>
+            Hashing.Start.Hash(this.Context).Hash(this.Head);
+
+        public override string ToString() =>
+            $"{string.Join(",", this.Context.Select(c => c.ToString()))} => {this.Head}";
     }
 
     public class TypeScheme : IHasVariables<string>

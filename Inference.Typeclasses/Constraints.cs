@@ -80,7 +80,7 @@ namespace Inference.Typeclasses
 
         private IImmutableList<IContextEntry> StepFlexRigid(TypeVariable flex, IType rigid, IImmutableList<IContextEntry> prefix, IImmutableList<IContextEntry> suffix)
         {
-            if (flex.Kind != rigid.Kind)
+            if (!flex.Kind.Equals(rigid.Kind))
             {
                 throw new Exception("Kinds do not unify.");
             }
