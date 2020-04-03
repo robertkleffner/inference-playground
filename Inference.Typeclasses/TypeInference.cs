@@ -76,6 +76,10 @@ namespace Inference.Typeclasses
             var inference = new TypeInference(initial).Infer(term, out var result);
             Console.WriteLine($"Final: {inference}");
             var normalized = inference._state.Context.Normalize().Apply(result);
+            if (normalized.Context.FreeVariables().Except(normalized.Head.FreeVariables()).Any())
+            {
+                throw new Exception($"Ambiguity detected in '{normalized}'");
+            }
             return new QualifiedType(normalized.Context.Reduce(inference._state.Context), normalized.Head);
         }
 
@@ -120,7 +124,12 @@ namespace Inference.Typeclasses
                 .AddMark()
                 .Infer(term, out var ungeneralized)
                 .SkimContext(out var skimmed);
-            var (ds, rs) = ungeneralized.Context.SplitPredicates(state._state.Context, skimmed.Select(s => s.name));
+            var generalizedVariables = skimmed.Select(s => s.name);
+            var (ds, rs) = ungeneralized.Context.SplitPredicates(state._state.Context, generalizedVariables);
+            if (rs.FreeVariables().Except(generalizedVariables).Any())
+            {
+                throw new Exception($"Ambiguity detected in '{string.Join(",", rs.Select(p => p.ToString()))}'");
+            }
             deferred = ds;
             generalized = this.MakeScheme(skimmed, new QualifiedType(rs, ungeneralized.Head));
             return state;

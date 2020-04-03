@@ -286,6 +286,9 @@ namespace Inference.Typeclasses
 
     public static class PredicateExt
     {
+        public static IEnumerable<string> FreeVariables(this IEnumerable<Predicate> predicates) =>
+            predicates.SelectMany(pred => pred.FreeVariables()).Distinct();
+
         public static IImmutableList<Predicate> ToHeadNormalForm(this IImmutableList<Predicate> predicates, IImmutableList<IContextEntry> environment) =>
             predicates.SelectMany(p => p.ToHeadNormalForm(environment)).ToImmutableList();
 

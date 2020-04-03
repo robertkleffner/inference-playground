@@ -30,7 +30,15 @@ namespace Inference.Typeclasses.Test
                     new Predicate("Eq", new TypeVariable("a", new DataKind()))),
                     ("a", new DataKind()))),
                 new TermVariableBinding("zero", new TypeScheme(new QualifiedType(new TypeConstructor("int", new DataKind())))),
-                new TermVariableBinding("true", new TypeScheme(new QualifiedType(new TypeConstructor("bool", new DataKind())))));
+                new TermVariableBinding("true", new TypeScheme(new QualifiedType(new TypeConstructor("bool", new DataKind())))),
+                new TermVariableBinding("show", new TypeScheme(new QualifiedType(
+                    PrimType.Fun(new TypeVariable("a", new DataKind()), new TypeConstructor("string", new DataKind())),
+                    new Predicate("Show", new TypeVariable("a", new DataKind()))),
+                    ("a", new DataKind()))),
+                new TermVariableBinding("read", new TypeScheme(new QualifiedType(
+                    PrimType.Fun(new TypeConstructor("string", new DataKind()), new TypeVariable("a", new DataKind())),
+                    new Predicate("Read", new TypeVariable("a", new DataKind()))),
+                    ("a", new DataKind()))));
 
             Assert.AreEqual(
                 TypeInference.Infer(initialState, new TermVariable("eq")),
@@ -43,6 +51,9 @@ namespace Inference.Typeclasses.Test
 
             Assert.ThrowsException<Exception>(() =>
                 TypeInference.Infer(initialState, new Application(new TermVariable("eq"), new TermVariable("true"))));
+
+            Assert.ThrowsException<Exception>(() =>
+                TypeInference.Infer(initialState, new LambdaAbstraction("x", new Application(new TermVariable("show"), new Application(new TermVariable("read"), new TermVariable("x"))))));
         }
     }
 }

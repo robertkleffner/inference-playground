@@ -58,6 +58,7 @@ namespace Inference.Typeclasses
                     {
                         LocalityMarker _ => new InferenceState(fresh, popped.Add(this).Add(top).AddRange(suffix)),
                         TermVariableBinding _ => new InferenceState(fresh, popped.Add(this).Add(top).AddRange(suffix)),
+                        TypeclassDeclaration _ => new InferenceState(fresh, popped.Add(this).Add(top).AddRange(suffix)),
                         TypeVariableIntro i => (vleft.Name == i.Name, vright.Name == i.Name) switch
                         {
                             (true, true) => new InferenceState(fresh, popped.Add(top).AddRange(suffix)),
