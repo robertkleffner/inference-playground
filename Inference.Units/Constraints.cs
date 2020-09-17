@@ -13,20 +13,11 @@ namespace Inference.Units
 
     public class TypeConstraint : IConstraint
     {
-        public IImmutableList<IContextEntry> Dependencies { get; }
         public IType Left { get; }
         public IType Right { get; }
 
         public TypeConstraint(IType left, IType right)
         {
-            this.Dependencies = ImmutableList.Create<IContextEntry>();
-            this.Left = left;
-            this.Right = right;
-        }
-
-        public TypeConstraint(IImmutableList<IContextEntry> dependencies, IType left, IType right)
-        {
-            this.Dependencies = dependencies;
             this.Left = left;
             this.Right = right;
         }
@@ -34,7 +25,7 @@ namespace Inference.Units
         public TypeConstraint Substitute(string name, IType subWith) =>
             new TypeConstraint(this.Left.Substitute(name, subWith), this.Right.Substitute(name, subWith));
 
-        public override string ToString() => $"[{string.Join(", ", this.Dependencies.Select(c => c.ToString()))} | {this.Left} == {this.Right}]";
+        public override string ToString() => $"[{this.Left} == {this.Right}]";
 
         public InferenceState Solve(FreshVariableStream fresh, IImmutableList<IContextEntry> prefix, IImmutableList<IContextEntry> suffix)
         {
@@ -79,9 +70,9 @@ namespace Inference.Units
         private InferenceState DecomposeIntoHullConstraint(TypeVariable flex, IType rigid, FreshVariableStream fresh, IImmutableList<IContextEntry> prefix, IImmutableList<IContextEntry> suffix)
         {
             var f1 = rigid.MakeHull(fresh, out var hull, out var constraints);
-            var freshDependencies = constraints.Select(c => new TypeVariableIntro(c.name, Kind.Unit));
+            var freshDependencies = constraints.Select(c => new TypeVariableIntro(c.name, Kind.Unit) as IContextEntry).ToImmutableList();
             var contextConstraints = constraints.Select(c => new UnitConstraint(new TypeVariable(c.name), c.replaced));
-            return new InferenceState(f1, prefix.Add(new FlexRigidHullConstraint(this.Dependencies.AddRange(freshDependencies), flex, hull)).AddRange(contextConstraints).AddRange(suffix));
+            return new InferenceState(f1, prefix.Add(new FlexRigidHullConstraint(freshDependencies, flex, hull)).AddRange(contextConstraints).AddRange(suffix));
         }
     }
 

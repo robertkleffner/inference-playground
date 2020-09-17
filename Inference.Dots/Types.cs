@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-
 using Inference.Common;
 
-namespace Inference.Typeclasses
+/*
+ * [(a,b)...] ~ [(I, c) d (e, f)...]
+ * a -> I, a1, e ...
+ * b -> c, b1, f ...
+ * d -> (a1, b1)
+ */
+
+namespace Inference.Dots
 {
     public interface IType : IHasVariables<string>, ICanSubstitute<string, IType>
     {
@@ -32,6 +38,7 @@ namespace Inference.Typeclasses
     public static class PrimType
     {
         public static TypeConstructor FunCons => new TypeConstructor("->", new ArrowKind(new DataKind(), new ArrowKind(new DataKind(), new DataKind())));
+        public static TypeConstructor TupleCons => new TypeConstructor("Tuple", new ArrowKind(PredefinedKinds.OnlySequenceKind, new DataKind()));
 
         public static IType Fun(IType input, IType output, params IType[] moreOutput)
         {
@@ -44,6 +51,9 @@ namespace Inference.Typeclasses
                 return new TypeApplication(new TypeApplication(FunCons, input), output);
             }
         }
+
+        public static IType Tuple(params IType[] elems) =>
+            new TypeApplication(TupleCons, new TypeSequence(elems.ToImmutableList()));
     }
 
     public class TypeVariable : IType
@@ -205,7 +215,15 @@ namespace Inference.Typeclasses
         }
 
         public IType Substitute(string replace, IType replaceWith) =>
-            new TypeApplication(this.Func.Substitute(replace, replaceWith), this.Arg.Substitute(replace, replaceWith));
+            (this.Func.Substitute(replace, replaceWith), this.Arg.Substitute(replace, replaceWith)) switch
+            {
+                (TypeSequence ls, TypeSequence rs) => ls.Types.Count != rs.Types.Count
+                    ? throw new Exception($"Substituting sequences of different lengths: {ls.Types} VS {rs.Types}")
+                    : new TypeSequence(ls.Types.Zip(rs.Types, (l, r) => new TypeApplication(l, r)).ToImmutableList<IType>()),
+                (TypeSequence ls, IType r) => new TypeSequence(ls.Types.Select(l => new TypeApplication(l, r)).ToImmutableList<IType>()),
+                (IType l, TypeSequence rs) => new TypeSequence(rs.Types.Select(r => new TypeApplication(l, r)).ToImmutableList<IType>()),
+                (IType l, IType r) => new TypeApplication(l, r)
+            };
 
         public IImmutableSet<string> FreeVariables() =>
             this.Func.FreeVariables().Union(this.Arg.FreeVariables());
@@ -218,6 +236,135 @@ namespace Inference.Typeclasses
             : false;
 
         public override int GetHashCode() => Hashing.Start.Hash(this.Func).Hash(this.Arg);
+
+        public void Deconstruct(out IType left, out IType right)
+        {
+            left = this.Func;
+            right = this.Arg;
+        }
+    }
+
+    public class TypeSequence : IType
+    {
+        public IImmutableList<IType> Types { get; }
+        public IType? Dotted { get; }
+
+        public IKind Kind => PredefinedKinds.OnlySequenceKind;
+
+        public bool IsHeadNormalForm => false;
+
+        public TypeSequence(IImmutableList<IType> types)
+        {
+            this.Types = types;
+            this.Dotted = null;
+        }
+
+        public TypeSequence(IImmutableList<IType> types, IType dotted)
+        {
+            this.Types = types;
+            this.Dotted = dotted;
+        }
+
+        public IImmutableDictionary<string, IType>? Match(IType compared)
+        {
+            if (compared is TypeSequence other)
+            {
+                if (other.Types.Count < this.Types.Count)
+                {
+                    return null;
+                }
+                if (other.Dotted != null && this.Dotted == null)
+                {
+                    return null;
+                }
+
+                IImmutableDictionary<string, IType>? matched = ImmutableDictionary<string, IType>.Empty;
+                for (int i = 0; i < this.Types.Count; i++)
+                {
+                    if (matched == null) { break; }
+                    var submatch = this.Types[i].Match(other.Types[i]);
+                    matched = submatch != null ? matched.Merge(submatch) : null;
+                }
+
+                if (this.Dotted != null)
+                {
+                    var dottedFree = this.Dotted.FreeVariables();
+                    IImmutableDictionary<string, IType>? dotmatched = ImmutableDictionary<string, IType>.Empty;
+                    for (int i = this.Types.Count; i < other.Types.Count; i++)
+                    {
+                        if (dotmatched == null) { break; }
+                        var submatch = this.Dotted.Match(other.Types[i]);
+                        dotmatched = submatch != null ? dotmatched.MergeWithSeqVars(submatch, dottedFree) : null;
+                    }
+
+                    if (dotmatched != null && other.Dotted != null)
+                    {
+                        var submatch = this.Dotted.Match(other.Dotted);
+                        dotmatched = submatch != null ? dotmatched.CapWithDotted(submatch) : null;
+                    }
+                    return dotmatched;
+                }
+                else
+                {
+                    return matched;
+                }
+            }
+            return null;
+        }
+
+        public IImmutableDictionary<string, IType> Unify(IType compared)
+        {
+            if (compared is TypeVariable other)
+            {
+                return other.Unify(compared);
+            }
+            else if (compared is TypeApplication app)
+            {
+                var s1 = this.Func.Unify(app.Func);
+                var s2 = s1.Apply(this.Arg).Unify(s1.Apply(app.Arg));
+                return s2.Compose(s1);
+            }
+            throw new Exception($"Cloud not unify {this} with {compared}");
+        }
+
+        public IType Substitute(string replace, IType replaceWith)
+        {
+            var firstSeqSub = this.Types
+                .Select(t => t.Substitute(replace, replaceWith))
+                .Select(t => t switch
+                {
+                    TypeSequence ts => ts.Types,
+                    _ => ImmutableList.Create(t)
+                })
+                .Aggregate((ls, rs) => ls.AddRange(rs));
+
+            if (this.Dotted != null)
+            {
+                return this.Dotted.Substitute(replace, replaceWith) switch
+                {
+                    TypeSequence ts => ts.Dotted != null
+                        ? new TypeSequence(firstSeqSub.AddRange(ts.Types), ts.Dotted)
+                        : new TypeSequence(firstSeqSub.AddRange(ts.Types)),
+                    IType t => new TypeSequence(firstSeqSub, t)
+                };
+            }
+            else
+            {
+                return new TypeSequence(firstSeqSub);
+            }
+        }
+
+        public IImmutableSet<string> FreeVariables() =>
+            this.Types.Aggregate(ImmutableHashSet<string>.Empty, (agg, t) => agg.Union(t.FreeVariables()));
+
+        public override string ToString() => $"[{string.Join(", ", this.Types.Select(t => t.ToString()))}]";
+
+        public override bool Equals(object obj) =>
+            obj is TypeSequence other
+            ? other.Types.Zip(this.Types, (t1, t2) => t1.Equals(t2)).All(t => t)
+            : false;
+
+        public override int GetHashCode() => Hashing.Start.Hash("[]").Hash(this.Types);
     }
 
     public class Predicate : IHasVariables<string>
@@ -235,8 +382,12 @@ namespace Inference.Typeclasses
             this.Arg = arg;
         }
 
-        public Predicate Substitute(string replace, IType replaceWith) =>
-            new Predicate(this.Name, this.Arg.Substitute(replace, replaceWith));
+        public IImmutableList<Predicate> Substitute(string replace, IType replaceWith) =>
+            this.Arg.Substitute(replace, replaceWith) switch
+            {
+                TypeSequence ts => ts.Types.Select(t => new Predicate(this.Name, t)).ToImmutableList(),
+                IType t => ImmutableList.Create(new Predicate(this.Name, t))
+            };
 
         public IImmutableDictionary<string, IType>? Match(Predicate compared) =>
             (this.Name == compared.Name)
@@ -351,7 +502,7 @@ namespace Inference.Typeclasses
 
         public QualifiedType Substitute(string replace, IType replaceWith) =>
             new QualifiedType(
-                this.Context.Select(p => p.Substitute(replace, replaceWith)).ToImmutableList(),
+                this.Context.SelectMany(p => p.Substitute(replace, replaceWith)).ToImmutableList(),
                 this.Head.Substitute(replace, replaceWith));
 
         public IImmutableSet<string> FreeVariables() =>
