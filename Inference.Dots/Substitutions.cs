@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+
+using Inference.Common;
 
 namespace Inference.Dots
 {
@@ -94,7 +97,7 @@ namespace Inference.Dots
 
         public static IImmutableDictionary<string, IType> CapWithDotted(this IImmutableDictionary<string, IType> subst, IImmutableDictionary<string, IType> dotted)
         {
-            var merged = subst;
+            /*var merged = subst;
             foreach (var kvp in dotted)
             {
                 if (merged.ContainsKey(kvp.Key))
@@ -113,7 +116,8 @@ namespace Inference.Dots
                     merged = merged.Add(kvp.Key, new TypeSequence(ImmutableList<IType>.Empty, kvp.Value));
                 }
             }
-            return merged;
+            return merged;*/
+            throw new NotImplementedException();
         }
     }
 }

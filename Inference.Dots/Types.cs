@@ -4,20 +4,15 @@ using System.Collections.Immutable;
 using System.Linq;
 using Inference.Common;
 
-/*
- * [(a,b)...] ~ [(I, c) d (e, f)...]
- * a -> I, a1, e ...
- * b -> c, b1, f ...
- * d -> (a1, b1)
- */
-
 namespace Inference.Dots
 {
     public interface IType : IHasVariables<string>, ICanSubstitute<string, IType>
     {
         IKind Kind { get; }
         bool IsHeadNormalForm { get; }
+        int Depth { get; }
 
+        IEnumerable<int> Levels();
         IImmutableDictionary<string, IType>? Match(IType compared);
         IImmutableDictionary<string, IType> Unify(IType compared);
 
@@ -59,12 +54,28 @@ namespace Inference.Dots
     public class TypeVariable : IType
     {
         public string Name { get; }
-
         public IKind Kind { get; }
+        public IImmutableList<int> Indexes { get; }
 
         public bool IsHeadNormalForm => true;
+        public int Depth => 0;
 
-        public TypeVariable(string name, IKind kind) { this.Name = name; this.Kind = kind; }
+        public TypeVariable(string name, IKind kind)
+        {
+            this.Name = name;
+            this.Kind = kind;
+            this.Indexes = ImmutableList.Create<int>();
+        }
+
+        public TypeVariable(string name, IKind kind, IEnumerable<int> indexes)
+        {
+            this.Name = name;
+            this.Kind = kind;
+            this.Indexes = indexes.ToImmutableList();
+        }
+
+
+        public IEnumerable<int> Levels() => Enumerable.Empty<int>();
 
         public IImmutableSet<string> FreeVariables() =>
             ImmutableHashSet.Create(this.Name);
@@ -110,12 +121,13 @@ namespace Inference.Dots
     public class TypeConstructor : IType
     {
         public string Name { get; }
-
         public IKind Kind { get; }
-
         public bool IsHeadNormalForm => false;
+        public int Depth => 0;
 
         public TypeConstructor(string name, IKind kind) { this.Name = name; this.Kind = kind; }
+
+        public IEnumerable<int> Levels() => Enumerable.Empty<int>();
 
         public IImmutableSet<string> FreeVariables() => ImmutableHashSet<string>.Empty;
 
@@ -152,6 +164,7 @@ namespace Inference.Dots
         public IType Arg { get; }
 
         public bool IsHeadNormalForm => this.Func.IsHeadNormalForm;
+        public int Depth => 0;
 
         public IKind Kind
         {
@@ -184,6 +197,8 @@ namespace Inference.Dots
                 this.Arg = rest.Last();
             }
         }
+
+        public IEnumerable<int> Levels() => Enumerable.Empty<int>();
 
         public IImmutableDictionary<string, IType>? Match(IType compared)
         {
@@ -247,27 +262,67 @@ namespace Inference.Dots
     public class TypeSequence : IType
     {
         public IImmutableList<IType> Types { get; }
-        public IType? Dotted { get; }
 
-        public IKind Kind => PredefinedKinds.OnlySequenceKind;
+        public IKind Kind => new SequenceKind(this.Types[0].Kind);
 
         public bool IsHeadNormalForm => false;
+
+        public int Depth => this.Types.Any() ? 1 + this.Types.First().Depth : 1;
 
         public TypeSequence(IImmutableList<IType> types)
         {
             this.Types = types;
-            this.Dotted = null;
-        }
-
-        public TypeSequence(IImmutableList<IType> types, IType dotted)
-        {
-            this.Types = types;
-            this.Dotted = dotted;
         }
 
         public IImmutableDictionary<string, IType>? Match(IType compared)
         {
-            if (compared is TypeSequence other)
+            throw new NotImplementedException();
+        }
+
+        public IImmutableDictionary<string, IType> Unify(IType compared)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IType Substitute(string replace, IType replaceWith)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IImmutableSet<string> FreeVariables() =>
+            this.Types.Aggregate(ImmutableHashSet<string>.Empty, (agg, t) => agg.Union(t.FreeVariables()));
+
+        public override string ToString() => $"[{string.Join(", ", this.Types.Select(t => t.ToString()))}]";
+
+        public override bool Equals(object obj) =>
+            obj is DottedTypeSequence other
+            ? other.Types.Zip(this.Types, (t1, t2) => t1.Equals(t2)).All(t => t)
+            : false;
+
+        public IEnumerable<int> Levels() => this.Types.Any()
+            ? this.Types.First().Levels().Prepend(this.Types.Count)
+            : new[] { this.Types.Count };
+
+        public override int GetHashCode() => Hashing.Start.Hash("[]").Hash(this.Types);
+    }
+
+    public class DottedTypeSequence : IType
+    {
+        public IImmutableList<IType> Types { get; }
+
+        public IKind Kind => PredefinedKinds.OnlySequenceKind;
+
+        public bool IsHeadNormalForm => false;
+        public int Depth => this.Types.Any() ? 1 + this.Types.First().Depth : 1;
+
+        public DottedTypeSequence(IImmutableList<IType> types)
+        {
+            this.Types = types;
+        }
+
+        public IImmutableDictionary<string, IType>? Match(IType compared)
+        {
+            /*if (compared is TypeSequence other)
             {
                 if (other.Types.Count < this.Types.Count)
                 {
@@ -309,12 +364,13 @@ namespace Inference.Dots
                     return matched;
                 }
             }
-            return null;
+            return null;*/
+            throw new NotImplementedException();
         }
 
         public IImmutableDictionary<string, IType> Unify(IType compared)
         {
-            if (compared is TypeVariable other)
+            /*if (compared is TypeVariable other)
             {
                 return other.Unify(compared);
             }
@@ -324,12 +380,14 @@ namespace Inference.Dots
                 var s2 = s1.Apply(this.Arg).Unify(s1.Apply(app.Arg));
                 return s2.Compose(s1);
             }
-            throw new Exception($"Cloud not unify {this} with {compared}");
+            throw new Exception($"Cloud not unify {this} with {compared}");*/
+            throw new NotImplementedException();
         }
 
         public IType Substitute(string replace, IType replaceWith)
         {
-            var firstSeqSub = this.Types
+            throw new NotImplementedException();
+            /*var firstSeqSub = this.Types
                 .Select(t => t.Substitute(replace, replaceWith))
                 .Select(t => t switch
                 {
@@ -351,20 +409,24 @@ namespace Inference.Dots
             else
             {
                 return new TypeSequence(firstSeqSub);
-            }
+            }*/
         }
 
         public IImmutableSet<string> FreeVariables() =>
             this.Types.Aggregate(ImmutableHashSet<string>.Empty, (agg, t) => agg.Union(t.FreeVariables()));
 
-        public override string ToString() => $"[{string.Join(", ", this.Types.Select(t => t.ToString()))}]";
+        public override string ToString() => $"[{string.Join(", ", this.Types.Select(t => t.ToString()))}...]";
 
         public override bool Equals(object obj) =>
-            obj is TypeSequence other
+            obj is DottedTypeSequence other
             ? other.Types.Zip(this.Types, (t1, t2) => t1.Equals(t2)).All(t => t)
             : false;
 
-        public override int GetHashCode() => Hashing.Start.Hash("[]").Hash(this.Types);
+        public IEnumerable<int> Levels() => this.Types.Any()
+            ? this.Types.First().Levels().Prepend(this.Types.Count)
+            : new[] { this.Types.Count };
+
+        public override int GetHashCode() => Hashing.Start.Hash("[...]").Hash(this.Types);
     }
 
     public class Predicate : IHasVariables<string>

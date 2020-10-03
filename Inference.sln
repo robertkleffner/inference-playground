@@ -17,7 +17,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Typeclasses", "In
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Typeclasses.Test", "Inference.Typeclasses.Test\Inference.Typeclasses.Test.csproj", "{3F20FB71-29BB-44A8-8580-FD6B7026EF81}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inference.Dots", "Inference.Dots\Inference.Dots.csproj", "{7778EE01-324E-4014-B967-E4162ABED237}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inference.Dots", "Inference.Dots\Inference.Dots.csproj", "{7778EE01-324E-4014-B967-E4162ABED237}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inference.Dots.Test", "Inference.Dots.Test\Inference.Dots.Test.csproj", "{DECA02FE-83C3-4D3B-8008-793AC57AE55B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +59,10 @@ Global
 		{7778EE01-324E-4014-B967-E4162ABED237}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7778EE01-324E-4014-B967-E4162ABED237}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7778EE01-324E-4014-B967-E4162ABED237}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DECA02FE-83C3-4D3B-8008-793AC57AE55B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DECA02FE-83C3-4D3B-8008-793AC57AE55B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DECA02FE-83C3-4D3B-8008-793AC57AE55B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DECA02FE-83C3-4D3B-8008-793AC57AE55B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
