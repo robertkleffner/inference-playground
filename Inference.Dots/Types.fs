@@ -77,11 +77,11 @@ module Substitution =
         | TSeq(ts) -> List.concat [for t in ts do yield extend t len]
         | TDot(t) -> [for t' in extend t len do yield TDot t']
     
-    let rec extendList (ts: Type list) (len: int) =
+    let rec extendSequence (ts: Type list) (len: int) =
         match ts with
-        | TSeq tes :: ts' -> tes :: extendList ts' len
-        | TDot (TSeq tes) :: ts' -> ts :: extendList ts' len
-        | t :: ts' -> extend t len :: extendList ts' len
+        | TSeq tes :: ts' -> tes :: extendSequence ts' len
+        | TDot (TSeq tes) :: ts' -> tes :: extendSequence ts' len
+        | t :: ts' -> extend t len :: extendSequence ts' len
         | [] -> []
     
     let sublen (t: Type) =
@@ -94,7 +94,7 @@ module Substitution =
     let rec liftSeqs(t : Type) =
         match t with
         | TApp (l, r) ->
-            match (liftSeqs l, liftSeqs r) with
+            match (l, r) with
             | (TSeq ls, TSeq rs) -> TSeq (zipwith ls rs (fun l r -> TApp(l, r) |> liftSeqs))
             | (TSeq ls, r) -> TSeq (zipwith ls (extend r ls.Length) (fun l r -> TApp(l, r) |> liftSeqs))
             | (TCon (n, Arrow(Seq Data, k)), TSeq rs) -> failwith "TODO: Need to handle type constructors that take sequence args"
@@ -103,9 +103,9 @@ module Substitution =
             | (TDot l, r) -> TApp (l, r) |> liftSeqs |> TDot
             | (l, r) -> TApp (l, r)
         | TSeq ts when List.exists isSeq ts && List.exists isNotSeq ts ->
-            let pushed = List.map liftSeqs ts
+            let pushed = ts//List.map liftSeqs ts
             let len = List.map sublen pushed |> List.max
-            let zipped = extendList pushed len |> zipn
+            let zipped = extendSequence pushed len |> zipn
             zipped
             |> List.map (fun t -> TSeq t)
             |> TSeq

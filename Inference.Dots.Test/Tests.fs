@@ -38,7 +38,7 @@ type TestClass () =
              [TApp (TCon ("c", Data), TVar ("d", Data, [0]))
               TApp (TCon ("c", Data), TVar ("d", Data, [1]))
               TApp (TCon ("c", Data), TVar ("d", Data, [2]))]],
-            extendList [TApp (TCon ("a", Data), TVar ("b", Data, [])); TApp (TCon ("c", Data), TVar ("d", Data, []))] 3)
+            extendSequence [TApp (TCon ("a", Data), TVar ("b", Data, [])); TApp (TCon ("c", Data), TVar ("d", Data, []))] 3)
 
     [<TestMethod>]
     member this.ListSubstitutionTest () =
